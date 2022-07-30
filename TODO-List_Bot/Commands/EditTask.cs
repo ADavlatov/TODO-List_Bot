@@ -7,7 +7,7 @@ namespace TODO_List_Bot.Commands;
 
 public class EditTask : ICommand
 {
-    public Task<Message> SendMessage(ITelegramBotClient bot, Message message)
+    public void SendMessage(ITelegramBotClient bot, Message message, TaskObject task)
     {
         throw new NotImplementedException();
     }

@@ -6,5 +6,5 @@ namespace TODO_List_Bot.Interfaces;
 
 public interface ICommand
 {
-    Task<Message> SendMessage(ITelegramBotClient bot, Message message);
+    void SendMessage(ITelegramBotClient bot, Message message, TaskObject task);
 }

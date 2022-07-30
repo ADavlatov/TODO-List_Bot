@@ -67,23 +67,14 @@ public class HandleUpdateService
     // Process Inline Keyboard callback data
     private async Task BotOnCallbackQueryReceived(CallbackQuery callbackQuery, Message message)
     {
-        if (tasks.FirstOrDefault(x => x.Name == callbackQuery.Data.Substring(6)) != null)
-        {
-            var taskName = tasks.FirstOrDefault(x => x.Name == callbackQuery.Data.Substring(6)).Name;
-            var taskAction = callbackQuery.Data[0..6];
+        var action = callbackQuery.Data.Split("_");
+        var task = tasks.FirstOrDefault(x => x.Name == action[1]);
+        ICommand? taskAction = task!.Do(action[0]);
 
-            if (taskAction == "finish")
-            {
-                var finishTask = new FinishTask();
-            }
-            else if (taskAction == "edit")
-            {
-                new EditTask();
-            }
-            else if (taskAction == "delete")
-            {
-                new DeleteTask();
-            }
+        if (task != null)
+        {
+            Console.WriteLine(task);
+            taskAction.SendMessage(_botClient, callbackQuery.Message, task);
         }
     }
 

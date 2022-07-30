@@ -1,14 +1,25 @@
 using Telegram.Bot;
 using Telegram.Bot.Types;
-using Telegram.Bot.Types.ReplyMarkups;
 using TODO_List_Bot.Interfaces;
+using TODO_List_Bot.Services;
 
 namespace TODO_List_Bot.Commands;
 
 public class FinishTask : ICommand
 { 
-    public Task<Message> SendMessage(ITelegramBotClient bot, Message message)
+    public void SendMessage(ITelegramBotClient bot, Message message, TaskObject task)
     {
-        throw new NotImplementedException();
+        HandleUpdateService.tasks.Remove(task);
+        
+        Console.WriteLine(task);
+        Console.WriteLine(task.Name);
+        
+        Console.WriteLine(bot);
+
+        Console.WriteLine(message);
+
+
+        bot.SendTextMessageAsync(chatId: message.Chat.Id,
+            text: "Таск " + task.Name + " выполнен");
     }
 }

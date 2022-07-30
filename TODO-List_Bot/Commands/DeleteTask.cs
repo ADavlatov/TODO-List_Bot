@@ -1,14 +1,17 @@
 using Telegram.Bot;
 using Telegram.Bot.Types;
-using Telegram.Bot.Types.ReplyMarkups;
 using TODO_List_Bot.Interfaces;
+using TODO_List_Bot.Services;
 
 namespace TODO_List_Bot.Commands;
 
 public class DeleteTask : ICommand
 {
-    public Task<Message> SendMessage(ITelegramBotClient bot, Message message)
+    public void SendMessage(ITelegramBotClient bot, Message message, TaskObject task)
     {
-        throw new NotImplementedException();
+        HandleUpdateService.tasks.Remove(task);
+
+        bot.SendTextMessageAsync(chatId: message.Chat.Id,
+            text: "Таск " + task.Name + " удален");
     }
 }

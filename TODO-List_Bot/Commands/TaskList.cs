@@ -32,9 +32,9 @@ public static class TaskList
         InlineKeyboardMarkup inlineKeyboard = new(
             new[]
             {
-                InlineKeyboardButton.WithCallbackData("✅", "finish" + taskName),
-                InlineKeyboardButton.WithCallbackData("🖋", "edit" + taskName),
-                InlineKeyboardButton.WithCallbackData("🚫", "delete" + taskName)
+                InlineKeyboardButton.WithCallbackData("✅", "finish_" + taskName),
+                InlineKeyboardButton.WithCallbackData("🖋", "edit_" + taskName),
+                InlineKeyboardButton.WithCallbackData("🚫", "delete_" + taskName)
             });
     
         var msg = await bot.SendTextMessageAsync(chatId: message.Chat.Id,
