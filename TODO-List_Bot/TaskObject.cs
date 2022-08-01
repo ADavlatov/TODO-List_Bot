@@ -24,6 +24,7 @@ public static class Extensions
             "taskName" => new EditTaskName( ),
             "taskDate" => new EditTaskDate( ),
             "taskTime" => new EditTaskTime( ),
+            "addTask" => new AddTask( ),
             _ => null,
         };
     }

@@ -59,6 +59,7 @@ public class HandleUpdateService
 
         var action = message.Text! switch
         {
+            "Добавить таск" => AddTask.AddNewTask(_botClient, message),
             "Список тасков" => TaskList.SendTaskList(_botClient, message),
             _ => OnMessageReceived(_botClient, message)
         };
@@ -71,11 +72,8 @@ public class HandleUpdateService
             if (_cache.TryGetValue("Action" + message.From.Id, out cache))
             {
                 var splitedCache = cache.Split("_");
-                var task = tasks.FirstOrDefault(x => x.Name == splitedCache[1]);
-                
-                _cache.Remove("Action" + message.From.Id);
-                _cache.Set("Action" + message.From.Id, splitedCache[0] + "Editing_" + task.Name);
-                
+                var task = tasks.FirstOrDefault(x => x.Name == splitedCache[1]) ?? tasks[0];
+
                 ICommand? command = task.Do(splitedCache[0]);
                 
                 command.SendMessage(bot, message, task);
