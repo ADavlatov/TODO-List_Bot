@@ -4,6 +4,7 @@ using Telegram.Bot.Exceptions;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 using Telegram.Bot.Types.InlineQueryResults;
+using Telegram.Bot.Types.ReplyMarkups;
 using TODO_List_Bot.Commands;
 using TODO_List_Bot.Interfaces;
 
@@ -11,11 +12,12 @@ namespace TODO_List_Bot.Services;
 
 public class HandleUpdateService
 {
-    private static IMemoryCache _cache;
+    public static IMemoryCache _cache;
     private readonly ITelegramBotClient _botClient;
     private readonly ILogger<HandleUpdateService> _logger;
 
-    public static List<TaskObject> tasks = new(){new TaskObject("sdfsd"), new TaskObject("sdfsdf"), new TaskObject("sdfsdf")};
+    public static List<TaskObject> tasks = new()
+        { new TaskObject("sdfsd"), new TaskObject("sdfsdf"), new TaskObject("sdfsdf") };
 
     public HandleUpdateService(ITelegramBotClient botClient, ILogger<HandleUpdateService> logger,
         IMemoryCache memoryCache)
@@ -58,12 +60,45 @@ public class HandleUpdateService
         var action = message.Text! switch
         {
             "Список тасков" => TaskList.SendTaskList(_botClient, message),
-            _ => AnyMessage.OnMessageReceived(_botClient, message)
+            _ => OnMessageReceived(_botClient, message)
         };
         Message sentMessage = await action;
         _logger.LogInformation("The message was sent with id: {SentMessageId}", sentMessage.MessageId);
+        
+        async Task<Message> OnMessageReceived(ITelegramBotClient bot, Message message)
+        {
+            string cache;
+            if (_cache.TryGetValue("Action" + message.From.Id, out cache))
+            {
+                var splitedCache = cache.Split("_");
+                var task = tasks.FirstOrDefault(x => x.Name == splitedCache[1]);
+                
+                _cache.Remove("Action" + message.From.Id);
+                _cache.Set("Action" + message.From.Id, splitedCache[0] + "Editing_" + task.Name);
+                
+                ICommand? command = task.Do(splitedCache[0]);
+                
+                command.SendMessage(bot, message, task);
+            }
+            
+
+            ReplyKeyboardMarkup replyKeyboardMarkup = new(
+                new[]
+                {
+                    new KeyboardButton[] { "Список тасков" },
+                    new KeyboardButton[] { "Добавить таск" },
+                    new KeyboardButton[] { "Настройки" }
+                })
+            {
+                ResizeKeyboard = true
+            };
+
+            return await bot.SendTextMessageAsync(chatId: message.Chat.Id,
+                text: "Выберите",
+                replyMarkup: replyKeyboardMarkup);
+        }
     }
-    
+
     // Process Inline Keyboard callback data
     private async Task BotOnCallbackQueryReceived(CallbackQuery callbackQuery, Message message)
     {
@@ -71,11 +106,7 @@ public class HandleUpdateService
         var task = tasks.FirstOrDefault(x => x.Name == action[1]);
         ICommand? taskAction = task!.Do(action[0]);
 
-        if (task != null)
-        {
-            Console.WriteLine(task);
-            taskAction.SendMessage(_botClient, callbackQuery.Message, task);
-        }
+        taskAction.SendMessage(_botClient, message, task, callbackQuery);
     }
 
     #region Inline Mode

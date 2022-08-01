@@ -4,20 +4,9 @@ using TODO_List_Bot.Interfaces;
 
 namespace TODO_List_Bot;
 
-public record TaskObject
-{
-    
-    //(string name, string decription, int year, int month, int day, int hour, int minute)
-    public TaskObject(string name)
-    {
-        Name = name;
-        // Decription = decription;
-        // Date = new DateOnly(year, month, day);
-        // Time = new TimeOnly(hour, minute);
-    }
-
-    public string Name { get; set; }
-    // public string Decription { get; set; }
+public record TaskObject(string Name)
+{ 
+    public string Name { get; set; } = Name;
     // public DateOnly Date { get; set; }  
     // public TimeOnly Time { get; set; }
 }
@@ -32,6 +21,9 @@ public static class Extensions
             "finish" => new FinishTask( ),
             "edit" => new EditTask( ),
             "delete" => new DeleteTask( ),
+            "taskName" => new EditTaskName( ),
+            "taskDate" => new EditTaskDate( ),
+            "taskTime" => new EditTaskTime( ),
             _ => null,
         };
     }
