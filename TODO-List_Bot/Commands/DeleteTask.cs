@@ -7,11 +7,11 @@ namespace TODO_List_Bot.Commands;
 
 public class DeleteTask : ICommand
 {
-    public void SendMessage(ITelegramBotClient bot, Message message, TaskObject task)
+    public void SendMessage(ITelegramBotClient bot, Message message, TaskObject task, CallbackQuery callback = null)
     {
         HandleUpdateService.tasks.Remove(task);
 
-        bot.SendTextMessageAsync(chatId: message.Chat.Id,
+        bot.SendTextMessageAsync(chatId: callback.Message.Chat.Id,
             text: "Таск " + task.Name + " удален");
     }
 }
