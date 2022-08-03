@@ -4,11 +4,11 @@ using TODO_List_Bot.Interfaces;
 
 namespace TODO_List_Bot;
 
-public record TaskObject(string Name)
+public record TaskObject(string name, DateOnly taskDate, TimeOnly taskTime)
 { 
-    public string Name { get; set; } = Name;
-    // public DateOnly Date { get; set; }  
-    // public TimeOnly Time { get; set; }
+    public string Name { get; set; } = name;
+    public DateOnly Date { get; set; } = taskDate;
+    public TimeOnly Time { get; set; } = taskTime;
 }
 
 public static class Extensions

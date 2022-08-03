@@ -1,3 +1,4 @@
+using System.Globalization;
 using Microsoft.Extensions.Caching.Memory;
 using Telegram.Bot;
 using Telegram.Bot.Exceptions;
@@ -17,7 +18,9 @@ public class HandleUpdateService
     private readonly ILogger<HandleUpdateService> _logger;
 
     public static List<TaskObject> tasks = new()
-        { new TaskObject("sdfsd"), new TaskObject("sdfsdf"), new TaskObject("sdfsdf") };
+        { new TaskObject("sdfsd", new DateOnly(2022, 08, 02, new GregorianCalendar()), new TimeOnly(18, 0)), 
+            new TaskObject("sdfsdf", new DateOnly(2022, 08, 02, new GregorianCalendar()), new TimeOnly(17, 0)), 
+            new TaskObject("sdfsdf", new DateOnly(2022, 08, 02, new GregorianCalendar()), new TimeOnly(19, 0)) };
 
     public HandleUpdateService(ITelegramBotClient botClient, ILogger<HandleUpdateService> logger,
         IMemoryCache memoryCache)
@@ -78,22 +81,27 @@ public class HandleUpdateService
                 
                 command.SendMessage(bot, message, task);
             }
-            
 
-            ReplyKeyboardMarkup replyKeyboardMarkup = new(
-                new[]
-                {
-                    new KeyboardButton[] { "Список тасков" },
-                    new KeyboardButton[] { "Добавить таск" },
-                    new KeyboardButton[] { "Настройки" }
-                })
+            if (!_cache.TryGetValue("Action" + message.From.Id, out cache))
             {
-                ResizeKeyboard = true
-            };
+                ReplyKeyboardMarkup replyKeyboardMarkup = new(
+                    new[]
+                    {
+                        new KeyboardButton[] { "Список тасков" },
+                        new KeyboardButton[] { "Добавить таск" },
+                        new KeyboardButton[] { "Настройки" }
+                    })
+                {
+                    ResizeKeyboard = true
+                };
 
+                return await bot.SendTextMessageAsync(chatId: message.Chat.Id,
+                    text: "Выберите",
+                    replyMarkup: replyKeyboardMarkup);
+            }
+            
             return await bot.SendTextMessageAsync(chatId: message.Chat.Id,
-                text: "Выберите",
-                replyMarkup: replyKeyboardMarkup);
+                text: "Выберите");
         }
     }
 
