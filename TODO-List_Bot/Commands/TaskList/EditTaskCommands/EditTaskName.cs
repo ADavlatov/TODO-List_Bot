@@ -15,13 +15,13 @@ public class EditTaskName : ICommand
             bot.SendTextMessageAsync(chatId: callback.Message.Chat.Id,
                 text: "Введите новое название таска"); 
         
-            HandleUpdateService._cache.Set("Action" + callback.From.Id, "taskName_" + task.Name);
+            HandleUpdateService._cache.Set("TaskAction" + callback.From.Id, "taskName_" + task.Name);
         }
         
         string action;
-        if (message != null && HandleUpdateService._cache.TryGetValue("Action" + message.From.Id, out action))
+        if (message != null && HandleUpdateService._cache.TryGetValue("TaskAction" + message.From.Id, out action))
         {
-            HandleUpdateService._cache.Remove("Action" + message.From.Id);
+            HandleUpdateService._cache.Remove("TaskAction" + message.From.Id);
             ChangeTaskName(bot, message, task);
         }
     }

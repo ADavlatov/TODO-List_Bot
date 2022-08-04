@@ -7,6 +7,7 @@ using Telegram.Bot.Types.Enums;
 using Telegram.Bot.Types.InlineQueryResults;
 using Telegram.Bot.Types.ReplyMarkups;
 using TODO_List_Bot.Commands;
+using TODO_List_Bot.Commands.AddTaskCommands;
 using TODO_List_Bot.Interfaces;
 
 namespace TODO_List_Bot.Services;
@@ -62,7 +63,7 @@ public class HandleUpdateService
 
         var action = message.Text! switch
         {
-            "Добавить таск" => AddTask.AddNewTask(_botClient, message),
+            "Добавить таск" => StartAddTask.AddNewTask(_botClient, message),
             "Список тасков" => TaskList.SendTaskList(_botClient, message),
             _ => OnMessageReceived(_botClient, message)
         };
@@ -72,14 +73,21 @@ public class HandleUpdateService
         async Task<Message> OnMessageReceived(ITelegramBotClient bot, Message message)
         {
             string cache;
-            if (_cache.TryGetValue("Action" + message.From.Id, out cache))
+            if (_cache.TryGetValue("TaskAction" + message.From.Id, out cache))
             {
                 var splitedCache = cache.Split("_");
-                var task = tasks.FirstOrDefault(x => x.Name == splitedCache[1]) ?? tasks[0];
-
+                var task = tasks.FirstOrDefault(x => x.Name == splitedCache[1]);
+            
                 ICommand? command = task.Do(splitedCache[0]);
                 
                 command.SendMessage(bot, message, task);
+            }
+
+            if (_cache.TryGetValue("AddAction" + message.From.Id, out cache))
+            {
+                IAddTaskCommand? addTaskCommand = _cache.Do(cache);
+                
+                addTaskCommand.Add(bot, message);
             }
 
             if (!_cache.TryGetValue("Action" + message.From.Id, out cache))
