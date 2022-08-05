@@ -1,6 +1,8 @@
 using Microsoft.Extensions.Caching.Memory;
 using TODO_List_Bot.Commands;
 using TODO_List_Bot.Commands.AddTaskCommands;
+using TODO_List_Bot.Commands.AddTaskCommands.TaskDate;
+using TODO_List_Bot.Commands.AddTaskCommands.TaskTime;
 using TODO_List_Bot.Interfaces;
 
 namespace TODO_List_Bot;
@@ -18,21 +20,33 @@ public static class MethodsExtensions
             "taskName" => new EditTaskName( ),
             "taskDate" => new EditTaskDate( ),
             "taskTime" => new EditTaskTime( ),
+            "addTask" => new NewTask(),
             _ => null,
         };
     }
 
-    public static IAddTaskCommand? Do(this IMemoryCache cache, string action)
+    // public static IAddNewTaskCommands? Do(this IMemoryCache cache, string action)
+    // {
+    //     if (cache is null) {
+    //         return null;
+    //     }
+    //     return action switch {
+    //         "setMonth" => new TaskMonth(),
+    //         "setDay" => new TaskDay(),
+    //         _ => null,
+    //     };
+    // }
+    
+    public static ISendReplyKeyboard? SendReplyKeyboard(this IMemoryCache cache, string action)
     {
         if (cache is null) {
             return null;
         }
         return action switch {
-            "setTaskName" => new SetTaskName( ),
-            "setTaskMonth" => new SetTaskMonth( ),
-            "setTaskDay" => new SetTaskDay( ),
-            "setTaskHour" => new SetTaskHour( ),
-            "setTaskMinute" => new SetTaskMinute( ),
+            "month" => new TaskMonth(),
+            "day" => new TaskDay(),
+            "hour" => new TaskHour(),
+            "minutes" => new TaskMinutes(),
             _ => null,
         };
     }
