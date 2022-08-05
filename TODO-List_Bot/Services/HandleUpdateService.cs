@@ -63,7 +63,7 @@ public class HandleUpdateService
 
         var action = message.Text! switch
         {
-            "Добавить таск" => StartAddTask.AddNewTask(_botClient, message),
+            "Добавить таск" => NewTask.CreateNewTask(_botClient, message),
             "Список тасков" => TaskList.SendTaskList(_botClient, message),
             _ => OnMessageReceived(_botClient, message)
         };
@@ -76,18 +76,11 @@ public class HandleUpdateService
             if (_cache.TryGetValue("TaskAction" + message.From.Id, out cache))
             {
                 var splitedCache = cache.Split("_");
-                var task = tasks.FirstOrDefault(x => x.Name == splitedCache[1]);
+                var task = tasks.FirstOrDefault(x => x.Name == splitedCache[1]) ?? tasks[0];
             
                 ICommand? command = task.Do(splitedCache[0]);
                 
                 command.SendMessage(bot, message, task);
-            }
-
-            if (_cache.TryGetValue("AddAction" + message.From.Id, out cache))
-            {
-                IAddTaskCommand? addTaskCommand = _cache.Do(cache);
-                
-                addTaskCommand.Add(bot, message);
             }
 
             if (!_cache.TryGetValue("Action" + message.From.Id, out cache))
@@ -109,7 +102,7 @@ public class HandleUpdateService
             }
             
             return await bot.SendTextMessageAsync(chatId: message.Chat.Id,
-                text: "Выберите");
+                text: "");
         }
     }
 
