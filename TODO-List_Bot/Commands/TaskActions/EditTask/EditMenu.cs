@@ -1,16 +1,14 @@
-using System.Reflection.Metadata;
-using Microsoft.Extensions.Caching.Memory;
 using Telegram.Bot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.ReplyMarkups;
 using TODO_List_Bot.Interfaces;
-using TODO_List_Bot.Services;
 
-namespace TODO_List_Bot.Commands;
+namespace TODO_List_Bot.Commands.TaskActions.EditTask;
 
-public class EditTask : ICommand
+public class EditMenu : ITaskAction
 {
-    public void SendMessage(ITelegramBotClient bot, Message message, TaskObject task, CallbackQuery callback = null)
+    public void SendMessage(ITelegramBotClient bot, Message message, TaskObject task, ApplicationContext db,
+        CallbackQuery callback = null)
     {
         SendEditMenu(bot, callback.Message, task);
     }
