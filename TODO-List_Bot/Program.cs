@@ -15,7 +15,8 @@ builder.Services.AddScoped<HandleUpdateService>();
 
 //из Microsoft.AspNetCore.Mvc.NewtonsoftJson
 builder.Services.AddControllers().AddNewtonsoftJson();
-//builder.Services.AddHostedService<TaskTimer>();
+builder.Services.AddDbContext<ApplicationContext>();
+builder.Services.AddHostedService<TaskNotifier>();
 builder.Services.AddMemoryCache();
 
 var app = builder.Build();
