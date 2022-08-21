@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Globalization;
 using Microsoft.Extensions.Caching.Memory;
 using Telegram.Bot;
@@ -8,6 +9,7 @@ using Telegram.Bot.Types.InlineQueryResults;
 using Telegram.Bot.Types.ReplyMarkups;
 using TODO_List_Bot.Commands;
 using TODO_List_Bot.Commands.AddTaskCommands;
+using TODO_List_Bot.Commands.TaskActions;
 using TODO_List_Bot.Interfaces;
 
 namespace TODO_List_Bot.Services;
@@ -15,13 +17,11 @@ namespace TODO_List_Bot.Services;
 public class HandleUpdateService
 {
     public static IMemoryCache _cache;
-    private readonly ITelegramBotClient _botClient;
+    private static ITelegramBotClient _botClient;
     private readonly ILogger<HandleUpdateService> _logger;
 
-    public static List<TaskObject> tasks = new()
-        { new TaskObject("sdfsd", new DateOnly(2022, 08, 02, new GregorianCalendar()), new TimeOnly(18, 0)), 
-            new TaskObject("sdfsdf", new DateOnly(2022, 08, 02, new GregorianCalendar()), new TimeOnly(17, 0)), 
-            new TaskObject("sdfsdf", new DateOnly(2022, 08, 02, new GregorianCalendar()), new TimeOnly(19, 0)) };
+    // public static List<TaskObject> tasks = new()
+    //     { new TaskObject("Тестовый 1", new DateOnly(2022, 08, 02, new GregorianCalendar()), new TimeOnly(18, 0), Int64.MaxValue, 0)};
 
     public HandleUpdateService(ITelegramBotClient botClient, ILogger<HandleUpdateService> logger,
         IMemoryCache memoryCache)
@@ -31,13 +31,13 @@ public class HandleUpdateService
         _cache = memoryCache;
     }
 
-    public async Task EchoAsync(Update update)
+    public async Task EchoAsync(Update update, ApplicationContext db)
     {
         var handler = update.Type switch
         {
-            UpdateType.Message => BotOnMessageReceived(update.Message!),
-            UpdateType.EditedMessage => BotOnMessageReceived(update.EditedMessage!),
-            UpdateType.CallbackQuery => BotOnCallbackQueryReceived(update.CallbackQuery!, update.Message),
+            UpdateType.Message => BotOnMessageReceived(update.Message!, db),
+            UpdateType.EditedMessage => BotOnMessageReceived(update.EditedMessage!, db),
+            UpdateType.CallbackQuery => BotOnCallbackQueryReceived(update.CallbackQuery!, update.Message, db),
             UpdateType.InlineQuery => BotOnInlineQueryReceived(update.InlineQuery!),
             UpdateType.ChosenInlineResult => BotOnChosenInlineResultReceived(update.ChosenInlineResult!),
             _ => UnknownUpdateHandlerAsync(update)
@@ -55,7 +55,7 @@ public class HandleUpdateService
         }
     }
 
-    private async Task BotOnMessageReceived(Message message)
+    private async Task BotOnMessageReceived(Message message, ApplicationContext db)
     {
         _logger.LogInformation("Receive message type: {MessageType}", message.Type);
         if (message.Type != MessageType.Text)
@@ -63,24 +63,30 @@ public class HandleUpdateService
 
         var action = message.Text! switch
         {
-            "Добавить таск" => NewTask.CreateNewTask(_botClient, message),
-            "Список тасков" => TaskList.SendTaskList(_botClient, message),
+            "Добавить таск" => AddTask.CreateNewTask(_botClient, message),
+            "Список тасков" => TaskList.SendTaskList(_botClient, message, db),
+            "Статистика" => UserStats.ShowUserStats(_botClient, message, db),
             _ => OnMessageReceived(_botClient, message)
         };
         Message sentMessage = await action;
         _logger.LogInformation("The message was sent with id: {SentMessageId}", sentMessage.MessageId);
-        
+
         async Task<Message> OnMessageReceived(ITelegramBotClient bot, Message message)
         {
+            if (db.Users.FirstOrDefault(x => x.UserId == message.From.Id) == null)
+            {
+                db.Users.Add(new User { UserId = message.From.Id });
+                db.SaveChanges();
+            }
+
             string cache;
             if (_cache.TryGetValue("TaskAction" + message.From.Id, out cache))
             {
                 var splitedCache = cache.Split("_");
-                var task = tasks.FirstOrDefault(x => x.Name == splitedCache[1]) ?? tasks[0];
-            
-                ICommand? command = task.Do(splitedCache[0]);
-                
-                command.SendMessage(bot, message, task);
+                var task = db.UserTasks.FirstOrDefault(x => x.Name == splitedCache[1]);
+
+                ITaskAction? command = cache.Do(splitedCache[0]);
+                command.SendMessage(bot, message, task, db);
             }
 
             if (!_cache.TryGetValue("Action" + message.From.Id, out cache))
@@ -90,7 +96,7 @@ public class HandleUpdateService
                     {
                         new KeyboardButton[] { "Список тасков" },
                         new KeyboardButton[] { "Добавить таск" },
-                        new KeyboardButton[] { "Настройки" }
+                        new KeyboardButton[] { "Статистика" }
                     })
                 {
                     ResizeKeyboard = true
@@ -100,20 +106,42 @@ public class HandleUpdateService
                     text: "Выберите",
                     replyMarkup: replyKeyboardMarkup);
             }
-            
+
             return await bot.SendTextMessageAsync(chatId: message.Chat.Id,
-                text: "");
+                text: "").ConfigureAwait(false);
         }
     }
 
+    public static async Task SendTaskNotification(TaskObject? task)
+    {
+        switch (task.State)
+        {
+            case 3:
+                _botClient.SendTextMessageAsync(chatId: task.ChatId,
+                    text: "Завтра истекает время таска: " + task.Name);
+                break;
+            case 2:
+                _botClient.SendTextMessageAsync(chatId: task.ChatId,
+                    text: "Через час истекает время таска: " + task.Name);
+                break;
+            case 1:
+                _botClient.SendTextMessageAsync(chatId: task.ChatId,
+                    text: "Напоминаем об: " + task.Name);
+                break;
+        }
+
+        task.State -= 1;
+    }
+
     // Process Inline Keyboard callback data
-    private async Task BotOnCallbackQueryReceived(CallbackQuery callbackQuery, Message message)
+    private async Task BotOnCallbackQueryReceived(CallbackQuery callbackQuery, Message message, ApplicationContext db)
     {
         var action = callbackQuery.Data.Split("_");
-        var task = tasks.FirstOrDefault(x => x.Name == action[1]);
-        ICommand? taskAction = task!.Do(action[0]);
+        var task = db.UserTasks.FirstOrDefault(x => x.User.UserId == callbackQuery.From.Id && x.Name == action[1]);
+        
+        ITaskAction? taskAction = task!.Do(action[0]);
 
-        taskAction.SendMessage(_botClient, message, task, callbackQuery);
+        taskAction.SendMessage(_botClient, message, task, db, callbackQuery);
     }
 
     #region Inline Mode
